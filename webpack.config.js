@@ -20,5 +20,11 @@ module.exports = {
     filename: "[name].bundle.js",
     path: path.resolve(__dirname, "dist"),
   },
-  plugins: [new HtmlWebpackPlugin({ title: "development" })],
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: "index.html",
+      inject: true,
+      css: ["./src/style/style.css"],
+    }),
+  ],
 };
