@@ -9,7 +9,11 @@ class Frick {
     const canvas = document.querySelector("#c");
     this.Renderer = new THREE.WebGL1Renderer({ canvas });
     this.Scene = new THREE.Scene();
-    this.Meshes = {};
+    this.Meshes = {
+      plane: this.Plane(),
+      box: this.Box(),
+      sphere: this.Sphere(),
+    };
     this.size = {
       width: window.innerWidth,
       height: window.innerHeight,
@@ -24,14 +28,9 @@ class Frick {
     this.init();
   }
   init() {
-    this.axesHelper();
     this.cameraChanges();
-    this.Plane();
-    this.Box();
-    this.Sphere();
     this.spotLight();
     this.rendererConfig();
-
     //Event Listener
     this.onResize();
   }
@@ -59,7 +58,17 @@ class Frick {
       this.Renderer.render(this.Scene, this.Camera);
     });
   }
-
+  // lights
+  spotLight() {
+    const spotLight = new THREE.SpotLight(0xffffff);
+    spotLight.position.set(-50, 30, 10);
+    spotLight.castShadow = true;
+    spotLight.shadow.mapSize = new THREE.Vector2(1024, 1024);
+    spotLight.shadow.camera.far = 130;
+    spotLight.shadow.camera.near = 4;
+    spotLight.visible = true;
+    this.Scene.add(spotLight);
+  }
   //geometries
   axesHelper() {
     const axes = new THREE.AxesHelper(12);
@@ -71,32 +80,23 @@ class Frick {
       color: 0x808080,
       side: THREE.DoubleSide,
     });
-    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-    plane.position.y = -3.5;
-    plane.rotateX(Math.PI * -0.5);
-    plane.receiveShadow = true;
-    this.Meshes["plane"] = { ...plane };
-    this.Scene.add(plane);
+    const mesh = new THREE.Mesh(planeGeometry, planeMaterial);
+    mesh.position.y = -3.5;
+    mesh.rotateX(Math.PI * -0.5);
+    mesh.receiveShadow = true;
+    this.Scene.add(mesh);
+    return mesh;
   }
   Box() {
     const boxGeometry = new THREE.BoxGeometry(4, 4, 4);
     const materialBox = new THREE.MeshLambertMaterial({
       color: 0xff0000,
     });
-    const Box = new THREE.Mesh(boxGeometry, materialBox);
-    Box.position.x = -10;
-    Box.castShadow = true;
-    this.Scene.add(Box);
-  }
-  spotLight() {
-    const spotLight = new THREE.SpotLight(0xffffff);
-    spotLight.position.set(-50, 30, 10);
-    spotLight.castShadow = true;
-    spotLight.shadow.mapSize = new THREE.Vector2(1024, 1024);
-    spotLight.shadow.camera.far = 130;
-    spotLight.shadow.camera.near = 4;
-    spotLight.visible = true;
-    this.Scene.add(spotLight);
+    const mesh = new THREE.Mesh(boxGeometry, materialBox);
+    mesh.position.x = -10;
+    mesh.castShadow = true;
+    this.Scene.add(mesh);
+    return mesh;
   }
   Sphere() {
     const sphereGeometry = new THREE.SphereGeometry(4);
@@ -105,12 +105,13 @@ class Frick {
     mesh.position.x = 20;
     mesh.castShadow = true;
     this.Scene.add(mesh);
+    return mesh;
   }
-
-  animate() {
-    this.rendererConfig();
-  }
+  positionChanger = (mesh, axis, distance) => {
+    mesh.position[axis] = distance;
+  };
 }
 
 const Render = new Frick();
-Render.animate();
+Render.positionChanger(Render.Meshes.sphere, "y", 10);
+Render.rendererConfig();
