@@ -1,13 +1,14 @@
 import * as THREE from "three";
 import "./style/style.css";
+import Stats from "stats.js";
 // import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 // import * as dat from "dat.gui";
 
 class Frick {
   constructor() {
     //properties
-    const canvas = document.querySelector("#c");
-    this.Renderer = new THREE.WebGL1Renderer({ canvas });
+    this.canvas = document.querySelector("#c");
+    this.Renderer = new THREE.WebGL1Renderer({ canvas: this.canvas });
     this.Scene = new THREE.Scene();
     this.Meshes = {
       plane: this.Plane(),
@@ -24,15 +25,21 @@ class Frick {
       0.1,
       1000
     );
-
+    //stats
+    this.stats = this.statsPanel();
+    //otherProperties
+    this.steps = 0;
     this.init();
   }
   init() {
     this.cameraChanges();
     this.spotLight();
     this.rendererConfig();
+    this.axesHelper();
     //Event Listener
     this.onResize();
+    this.boxAnimation();
+    this.sphereAnimation();
     this.Rerender();
   }
   rendererConfig() {
@@ -42,7 +49,7 @@ class Frick {
     this.Renderer.setSize(this.size.width, this.size.height);
   }
   cameraChanges() {
-    this.Camera.position.set(-30, 30, 30);
+    this.Camera.position.set(0, 0, 30);
     this.Camera.lookAt(this.Scene.position);
   }
 
@@ -58,14 +65,15 @@ class Frick {
       this.Renderer.setPixelRatio(window.devicePixelRatio);
     });
   }
+
   // lights
   spotLight() {
     const spotLight = new THREE.SpotLight(0xffffff);
-    spotLight.position.set(-50, 30, 10);
+    spotLight.position.set(-200, 100, 30);
     spotLight.castShadow = true;
     spotLight.shadow.mapSize = new THREE.Vector2(1024, 1024);
     spotLight.shadow.camera.far = 130;
-    spotLight.shadow.camera.near = 4;
+    spotLight.shadow.camera.near = 0.1;
     spotLight.visible = true;
     this.Scene.add(spotLight);
   }
@@ -84,7 +92,7 @@ class Frick {
     mesh.position.y = -3.5;
     mesh.rotateX(Math.PI * -0.5);
     mesh.receiveShadow = true;
-    this.Scene.add(mesh);
+    // this.Scene.add(mesh);
     return mesh;
   }
   Box() {
@@ -95,7 +103,7 @@ class Frick {
     const mesh = new THREE.Mesh(boxGeometry, materialBox);
     mesh.position.x = -10;
     mesh.castShadow = true;
-    this.Scene.add(mesh);
+    // this.Scene.add(mesh);
     return mesh;
   }
   Sphere() {
@@ -107,15 +115,33 @@ class Frick {
     this.Scene.add(mesh);
     return mesh;
   }
-  positionChanger = (mesh, axis, distance) => {
-    mesh.position[axis] = distance;
-  };
+
+  statsPanel() {
+    const stats = new Stats();
+    stats.showPanel(2); // 0: fps, 1: ms, 2: mb, 3+: custom
+    document.body.appendChild(stats.dom);
+    return stats;
+  }
   Rerender = () => {
-    requestAnimationFrame(this.Rerender);
+    this.stats.begin();
+    this.stats.end();
     this.Renderer.render(this.Scene, this.Camera);
+    requestAnimationFrame(this.Rerender);
+  };
+  //animaiton
+  boxAnimation = () => {
+    this.Meshes.box.rotation.x += 0.01;
+    this.Meshes.box.rotation.y += 0.01;
+    this.Meshes.box.rotation.z += 0.01;
+    requestAnimationFrame(this.boxAnimation);
+  };
+  sphereAnimation = () => {
+    this.steps += 0.018;
+    this.Meshes.sphere.position.x = 10 * Math.cos(this.steps);
+    this.Meshes.sphere.position.z = 10 * Math.sin(this.steps);
+    requestAnimationFrame(this.sphereAnimation);
   };
 }
+THREE.MathUtils.clamp();
 
 const Render = new Frick();
-Render.positionChanger(Render.Meshes.sphere, "y", 10);
-Render.rendererConfig();
