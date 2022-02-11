@@ -33,13 +33,13 @@ class Frick {
     this.rendererConfig();
     //Event Listener
     this.onResize();
+    this.Rerender();
   }
   rendererConfig() {
     this.Renderer.shadowMap.enabled = true;
     this.Renderer.setPixelRatio(window.devicePixelRatio);
     this.Renderer.setClearColor(0x000000);
     this.Renderer.setSize(this.size.width, this.size.height);
-    this.Renderer.render(this.Scene, this.Camera);
   }
   cameraChanges() {
     this.Camera.position.set(-30, 30, 30);
@@ -55,7 +55,7 @@ class Frick {
 
       //render Again
       this.Renderer.setSize(this.size.width, this.size.height);
-      this.Renderer.render(this.Scene, this.Camera);
+      this.Renderer.setPixelRatio(window.devicePixelRatio);
     });
   }
   // lights
@@ -109,6 +109,10 @@ class Frick {
   }
   positionChanger = (mesh, axis, distance) => {
     mesh.position[axis] = distance;
+  };
+  Rerender = () => {
+    requestAnimationFrame(this.Rerender);
+    this.Renderer.render(this.Scene, this.Camera);
   };
 }
 
