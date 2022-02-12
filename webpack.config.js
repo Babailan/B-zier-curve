@@ -6,7 +6,7 @@ module.exports = {
   entry: {
     index: "./src/index.js",
   },
-  devServer: { port: "3000", static: "./dist" },
+  devServer: { port: "3001", static: "./dist" },
   mode: "development",
   module: {
     rules: [

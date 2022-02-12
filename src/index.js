@@ -2,7 +2,6 @@ import * as THREE from "three";
 import "./style/style.css";
 import Stats from "stats.js";
 import { TrackballControls } from "three/examples/jsm/controls/TrackballControls";
-// import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import * as dat from "dat.gui";
 
 class Parent {
