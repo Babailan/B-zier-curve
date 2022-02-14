@@ -1,138 +1,159 @@
 import * as THREE from "three";
 import "./style/style.css";
-import { TrackballControls } from "three/examples/jsm/controls/TrackballControls";
 import Stats from "three/examples/jsm/libs/stats.module";
+import { TrackballControls } from "three/examples/jsm/controls/TrackballControls";
 import * as dat from "dat.gui";
-import randomColor from "randomcolor";
 
 class Parent {
   constructor() {
+    //properties
     this.canvas = document.querySelector("#webgl-output");
-    this.WebGL = new THREE.WebGLRenderer({ canvas: this.canvas });
+    this.Renderer = new THREE.WebGL1Renderer({ canvas: this.canvas });
+    this.Scene = new THREE.Scene();
+    this.Meshes = {
+      plane: this.Plane(),
+      box: this.Box(),
+      sphere: this.Sphere(),
+    };
+    this.size = {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    };
     this.Camera = new THREE.PerspectiveCamera(
       70,
-      window.innerWidth / window.innerHeight,
+      this.size.width / this.size.height,
       0.1,
       1000
     );
-    this.Scene = new THREE.Scene();
-    //other properties
-    this.Meshes = {
-      plane: this.plane(),
+    this.trackball = this.cameraChanges();
+    //stats
+    this.stats = this.statsPanel();
+    //otherProperties
+    this.steps = 0;
+    this.guiProperties = {
+      bounceSpeed: 0.04,
+      boxRotation: 0.04,
     };
-    this.helper = {
-      stats: this.stats(),
-    };
-    this.guiObject = {
-      rotationBox: 0.04,
-      addBox: () => {
-        this.addBox();
-      },
-    };
-    this.Indentifier = {};
-    this.current = 0;
-    this.TrackballControls = new TrackballControls(this.Camera, this.canvas);
     this.init();
   }
   init() {
-    this.webGLConfig();
     this.spotLight();
-    this.dat();
-    this.cameraConfig();
-    this.rerender();
+    this.rendererConfig();
+    this.axesHelper();
+    //Event Listener
+    this.onResize();
+    this.boxAnimation();
+    this.sphereAnimation();
+    this.gui();
+    this.Rerender();
   }
-  //configurations
-  webGLConfig() {
-    this.WebGL.setSize(window.innerWidth, window.innerHeight);
-    this.WebGL.render(this.Scene, this.Camera);
-    this.WebGL.setPixelRatio(window.devicePixelRatio);
-    this.WebGL.shadowMap.enabled = true;
-    this.WebGL.setClearColor(0x000000);
+  rendererConfig() {
+    this.Renderer.shadowMap.enabled = true;
+    this.Renderer.setPixelRatio(window.devicePixelRatio);
+    this.Renderer.setClearColor(0x000000);
+    this.Renderer.setSize(this.size.width, this.size.height);
   }
-  cameraConfig() {
+  cameraChanges() {
     this.Camera.position.set(-30, 30, 30);
-    this.Camera.aspect = window.innerWidth / window.innerHeight;
-    this.Camera.updateProjectionMatrix();
+    this.Camera.lookAt(this.Scene.position);
+    const trackBall = new TrackballControls(this.Camera, this.canvas);
+    const clock = new THREE.Clock();
+    return { trackBall, clock };
   }
-  //Event like window eventLister
   onResize() {
     window.addEventListener("resize", () => {
-      this.WebGL.setSize(window.innerWidth, window.innerHeight);
+      this.size.width = window.innerWidth;
+      this.size.height = window.innerHeight;
+      this.Camera.aspect = window.innerWidth / window.innerHeight;
+      this.Camera.updateProjectionMatrix();
+
+      //render Again
+      this.Renderer.setSize(this.size.width, this.size.height);
+      this.Renderer.setPixelRatio(window.devicePixelRatio);
     });
   }
+  // lights
+  spotLight() {
+    const spotLight = new THREE.SpotLight(0xffffff);
+    spotLight.position.set(-20, 50, 30);
+    spotLight.castShadow = true;
+    spotLight.shadow.mapSize = new THREE.Vector2(1024, 1024);
+    spotLight.shadow.camera.far = 130;
+    spotLight.shadow.camera.near = 0.1;
+    spotLight.visible = true;
+    this.Scene.add(spotLight);
+  }
   //geometries
-  plane() {
-    const Geometry = new THREE.PlaneGeometry(50, 20);
-    const Material = new THREE.MeshLambertMaterial({
+  axesHelper() {
+    const axes = new THREE.AxesHelper(12);
+    this.Scene.add(axes);
+  }
+  Plane() {
+    const planeGeometry = new THREE.PlaneGeometry(60, 30);
+    const planeMaterial = new THREE.MeshLambertMaterial({
       color: 0x808080,
       side: THREE.DoubleSide,
     });
-    const Mesh = new THREE.Mesh(Geometry, Material);
-    Mesh.receiveShadow = true;
-    Mesh.rotation.x = THREE.MathUtils.degToRad(90);
-    Mesh.position.y = -2;
-    this.Scene.add(Mesh);
-    return Mesh;
+    const mesh = new THREE.Mesh(planeGeometry, planeMaterial);
+    mesh.position.y = -3.5;
+    mesh.rotateX(Math.PI * -0.5);
+    mesh.receiveShadow = true;
+    this.Scene.add(mesh);
+    return mesh;
   }
-  //light
-  ambientLight() {
-    const light = new THREE.AmbientLight(0x3c3c3c);
+  Box() {
+    const boxGeometry = new THREE.BoxGeometry(4, 4, 4);
+    const materialBox = new THREE.MeshLambertMaterial({
+      color: 0xff0000,
+    });
+    const mesh = new THREE.Mesh(boxGeometry, materialBox);
+    mesh.position.x = -10;
+    mesh.castShadow = true;
+    this.Scene.add(mesh);
+    return mesh;
   }
-  spotLight() {
-    const light = new THREE.SpotLight(0xffffff, 1.8, 150, 120);
-    light.position.set(0, 60, 0);
-    light.castShadow = true;
-    light.visible = true;
-    light.shadow.mapSize = new THREE.Vector2(1024, 1024);
-    light.shadow.camera.far = 130;
-    light.shadow.camera.near = 0.1;
-    this.Scene.add(light);
+  Sphere() {
+    const sphereGeometry = new THREE.SphereGeometry(4);
+    const material = new THREE.MeshLambertMaterial({ color: 0x0000ff });
+    const mesh = new THREE.Mesh(sphereGeometry, material);
+    mesh.castShadow = true;
+    this.Scene.add(mesh);
+    return mesh;
   }
-  //helper
-  stats() {
+  statsPanel() {
     const stats = new Stats();
+    stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
     document.body.appendChild(stats.dom);
     return stats;
   }
-  dat() {
-    const gui = new dat.GUI();
-    gui.add(this.guiObject, "rotationBox", 0, 0.5);
-    gui.add(this.guiObject, "addBox");
-  }
-  //rerender
-  rerender = () => {
-    this.WebGL.render(this.Scene, this.Camera);
-    this.Camera.lookAt(this.Scene.position);
-    this.TrackballControls.update();
-    this.helper.stats.begin();
-    this.helper.stats.end();
-    requestAnimationFrame(this.rerender);
+  //rerenderer
+  Rerender = () => {
+    this.stats.begin();
+    this.stats.end();
+    this.Renderer.render(this.Scene, this.Camera);
+    requestAnimationFrame(this.Rerender);
+    this.trackball.trackBall.update(this.trackball.clock.getDelta());
   };
-  //add somthin
-  addBox() {
-    function sizeRandom(min, max) {
-      return Math.random() * (max - min) + min;
-    }
-    const size = sizeRandom(1, 3);
-    const colur = randomColor();
-    const generatedColor = parseInt(colur.replace("#", "0x"));
-    const Geometry = new THREE.BoxGeometry(size, size, size);
-    const Material = new THREE.MeshLambertMaterial({ color: generatedColor });
-    const Mesh = new THREE.Mesh(Geometry, Material);
-    Mesh.castShadow = true;
-    Mesh.position.z = sizeRandom(-9, 9);
-    Mesh.position.x = sizeRandom(-22, 22);
-    this.Scene.add(Mesh);
-    this.boxRotation(Mesh);
-  }
-  //animation
-  boxRotation = (Mesh) => {
-    requestAnimationFrame(() => {
-      this.boxRotation(Mesh);
-    });
-    Mesh.rotation.x += this.guiObject.rotationBox;
-    Mesh.rotation.y += this.guiObject.rotationBox;
-    Mesh.rotation.z += this.guiObject.rotationBox;
+  // gui
+  gui = () => {
+    const gui = new dat.GUI();
+    gui.domElement.style.marginRight = "50px";
+    gui.add(this.guiProperties, "bounceSpeed", 0, 0.5);
+    gui.add(this.guiProperties, "boxRotation", 0, 0.5);
+  };
+  //animaiton
+  boxAnimation = () => {
+    this.Meshes.box.rotation.x += this.guiProperties.boxRotation;
+    this.Meshes.box.rotation.y += this.guiProperties.boxRotation;
+    this.Meshes.box.rotation.z += this.guiProperties.boxRotation;
+    requestAnimationFrame(this.boxAnimation);
+  };
+  sphereAnimation = () => {
+    this.Meshes.sphere.position.x = 15 + 8 * Math.cos(this.steps);
+    this.Meshes.sphere.position.y = 10 * Math.abs(Math.sin(this.steps));
+    this.steps += this.guiProperties.bounceSpeed;
+    requestAnimationFrame(this.sphereAnimation);
   };
 }
+
 new Parent();
