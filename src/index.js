@@ -13,7 +13,7 @@ class Parent {
       70,
       window.innerWidth / window.innerHeight,
       0.1,
-      1000
+      2000
     );
     this.Scene = new THREE.Scene();
     //other properties
@@ -28,6 +28,9 @@ class Parent {
       addBox: () => {
         this.addBox();
       },
+      removeCube: () => {
+        this.removeCube();
+      },
     };
     this.Indentifier = {};
     this.current = 0;
@@ -35,11 +38,13 @@ class Parent {
     this.init();
   }
   init() {
+    this.ambientLight();
     this.webGLConfig();
     this.spotLight();
     this.dat();
     this.cameraConfig();
     this.rerender();
+    this.onResize();
   }
   //configurations
   webGLConfig() {
@@ -57,7 +62,21 @@ class Parent {
   //Event like window eventLister
   onResize() {
     window.addEventListener("resize", () => {
+      this.Camera.aspect = window.innerWidth / window.innerHeight;
+      this.Camera.updateProjectionMatrix();
       this.WebGL.setSize(window.innerWidth, window.innerHeight);
+      this.WebGL.setPixelRatio(window.devicePixelRatio);
+      if (window.innerWidth < 768) {
+        this.Camera.position.z = 0;
+        this.Camera.rotateX(0);
+        this.Camera.rotateZ(0);
+        this.Camera.rotateY(0);
+      } else {
+        this.Camera.position.z = 30;
+        this.Camera.rotateX(0);
+        this.Camera.rotateZ(0);
+        this.Camera.rotateY(0);
+      }
     });
   }
   //geometries
@@ -77,13 +96,14 @@ class Parent {
   //light
   ambientLight() {
     const light = new THREE.AmbientLight(0x3c3c3c);
+    light.position.y = 10;
+    this.Scene.add(light);
   }
   spotLight() {
     const light = new THREE.SpotLight(0xffffff, 1.8, 150, 120);
     light.position.set(0, 60, 0);
     light.castShadow = true;
     light.visible = true;
-    light.shadow.mapSize = new THREE.Vector2(1024, 1024);
     light.shadow.camera.far = 130;
     light.shadow.camera.near = 0.1;
     this.Scene.add(light);
@@ -98,16 +118,8 @@ class Parent {
     const gui = new dat.GUI();
     gui.add(this.guiObject, "rotationBox", 0, 0.5);
     gui.add(this.guiObject, "addBox");
+    gui.add(this.guiObject, "removeCube");
   }
-  //rerender
-  rerender = () => {
-    this.WebGL.render(this.Scene, this.Camera);
-    this.Camera.lookAt(this.Scene.position);
-    this.TrackballControls.update();
-    this.helper.stats.begin();
-    this.helper.stats.end();
-    requestAnimationFrame(this.rerender);
-  };
   //add somthin
   addBox() {
     function sizeRandom(min, max) {
@@ -122,6 +134,7 @@ class Parent {
     Mesh.castShadow = true;
     Mesh.position.z = sizeRandom(-9, 9);
     Mesh.position.x = sizeRandom(-22, 22);
+    Mesh.name = "Cube-" + this.Scene.children.length;
     this.Scene.add(Mesh);
     this.boxRotation(Mesh);
   }
@@ -133,6 +146,20 @@ class Parent {
     Mesh.rotation.x += this.guiObject.rotationBox;
     Mesh.rotation.y += this.guiObject.rotationBox;
     Mesh.rotation.z += this.guiObject.rotationBox;
+  };
+  removeCube() {
+    const length = this.Scene.children.length - 1;
+    if (this.Scene.children[length].name.includes("Cube-")) {
+      this.Scene.children.pop();
+    }
+  }
+  //rerender
+  rerender = () => {
+    this.WebGL.render(this.Scene, this.Camera);
+    this.Camera.lookAt(this.Scene.position);
+    this.TrackballControls.update();
+    this.helper.stats.update();
+    requestAnimationFrame(this.rerender);
   };
 }
 new Parent();
