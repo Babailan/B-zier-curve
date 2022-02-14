@@ -35,10 +35,10 @@ class Parent {
     this.init();
   }
   init() {
+    this.webGLConfig();
     this.spotLight();
     this.dat();
     this.cameraConfig();
-    this.webGLConfig();
     this.rerender();
   }
   //configurations
@@ -46,6 +46,8 @@ class Parent {
     this.WebGL.setSize(window.innerWidth, window.innerHeight);
     this.WebGL.render(this.Scene, this.Camera);
     this.WebGL.setPixelRatio(window.devicePixelRatio);
+    this.WebGL.shadowMap.enabled = true;
+    this.WebGL.setClearColor(0x000000);
   }
   cameraConfig() {
     this.Camera.position.set(-30, 30, 30);
@@ -77,9 +79,13 @@ class Parent {
     const light = new THREE.AmbientLight(0x3c3c3c);
   }
   spotLight() {
-    const light = new THREE.SpotLight(0xffffff, 2, 150, 120);
-    light.position.set(-40, 60, -10);
+    const light = new THREE.SpotLight(0xffffff, 1.8, 150, 120);
+    light.position.set(0, 60, 0);
     light.castShadow = true;
+    light.visible = true;
+    light.shadow.mapSize = new THREE.Vector2(1024, 1024);
+    light.shadow.camera.far = 130;
+    light.shadow.camera.near = 0.1;
     this.Scene.add(light);
   }
   //helper
@@ -102,17 +108,20 @@ class Parent {
     this.helper.stats.end();
     requestAnimationFrame(this.rerender);
   };
+  //add somthin
   addBox() {
     function sizeRandom(min, max) {
       return Math.random() * (max - min) + min;
     }
     const size = sizeRandom(1, 3);
+    const colur = randomColor();
+    const generatedColor = parseInt(colur.replace("#", "0x"));
     const Geometry = new THREE.BoxGeometry(size, size, size);
-    const Material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+    const Material = new THREE.MeshLambertMaterial({ color: generatedColor });
     const Mesh = new THREE.Mesh(Geometry, Material);
+    Mesh.castShadow = true;
     Mesh.position.z = sizeRandom(-9, 9);
     Mesh.position.x = sizeRandom(-22, 22);
-    console.log(randomColor());
     this.Scene.add(Mesh);
     this.boxRotation(Mesh);
   }
