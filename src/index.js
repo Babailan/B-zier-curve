@@ -12,7 +12,7 @@ class Parent {
     this.Camera = new THREE.PerspectiveCamera(
       70,
       window.innerWidth / window.innerHeight,
-      0.1,
+      0.01,
       2000
     );
     this.Scene = new THREE.Scene();
@@ -31,13 +31,20 @@ class Parent {
       removeCube: () => {
         this.removeCube();
       },
+      removeAllCube: () => {
+        this.removeAllCube();
+      },
     };
+
     this.Indentifier = {};
     this.current = 0;
     this.TrackballControls = new TrackballControls(this.Camera, this.canvas);
+    this.animations = [];
+    this.track;
     this.init();
   }
   init() {
+    this.sceneConfig();
     this.ambientLight();
     this.webGLConfig();
     this.spotLight();
@@ -58,6 +65,9 @@ class Parent {
     this.Camera.position.set(-30, 30, 30);
     this.Camera.aspect = window.innerWidth / window.innerHeight;
     this.Camera.updateProjectionMatrix();
+  }
+  sceneConfig() {
+    this.Scene.fog = new THREE.Fog(0xffffff, 0.01, 100);
   }
   //Event like window eventLister
   onResize() {
@@ -119,8 +129,17 @@ class Parent {
     gui.add(this.guiObject, "rotationBox", 0, 0.5);
     gui.add(this.guiObject, "addBox");
     gui.add(this.guiObject, "removeCube");
+    gui.add(this.guiObject, "removeAllCube");
   }
-  //add somthin
+  //add somthing
+  removeAllCube() {
+    let length = this.Scene.children.length - 1;
+    for (let i = length; i >= 0; i--) {
+      if (this.Scene.children[i].name.includes("cube-")) {
+        this.Scene.children.splice(i, 1);
+      }
+    }
+  }
   addBox() {
     function sizeRandom(min, max) {
       return Math.random() * (max - min) + min;
@@ -134,24 +153,24 @@ class Parent {
     Mesh.castShadow = true;
     Mesh.position.z = sizeRandom(-9, 9);
     Mesh.position.x = sizeRandom(-22, 22);
-    Mesh.name = "Cube-" + this.Scene.children.length;
+    Mesh.name = "cube-" + this.Scene.children.length;
     this.Scene.add(Mesh);
-    this.boxRotation(Mesh);
   }
-  //animation
-  boxRotation = (Mesh) => {
-    requestAnimationFrame(() => {
-      this.boxRotation(Mesh);
-    });
-    Mesh.rotation.x += this.guiObject.rotationBox;
-    Mesh.rotation.y += this.guiObject.rotationBox;
-    Mesh.rotation.z += this.guiObject.rotationBox;
-  };
   removeCube() {
     const length = this.Scene.children.length - 1;
-    if (this.Scene.children[length].name.includes("Cube-")) {
+    if (this.Scene.children[length].name.includes("cube-")) {
       this.Scene.children.pop();
     }
+  }
+  //animation
+  boxRotation() {
+    this.Scene.traverse((object) => {
+      if (object.name.includes("cube-")) {
+        object.rotateX(this.guiObject.rotationBox);
+        object.rotateY(this.guiObject.rotationBox);
+        object.rotateZ(this.guiObject.rotationBox);
+      }
+    });
   }
   //rerender
   rerender = () => {
@@ -159,6 +178,7 @@ class Parent {
     this.Camera.lookAt(this.Scene.position);
     this.TrackballControls.update();
     this.helper.stats.update();
+    this.boxRotation();
     requestAnimationFrame(this.rerender);
   };
 }
