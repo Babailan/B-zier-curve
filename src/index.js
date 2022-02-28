@@ -98,7 +98,7 @@ class Parent {
     });
     const Mesh = new THREE.Mesh(Geometry, Material);
     Mesh.receiveShadow = true;
-    Mesh.rotation.x = THREE.MathUtils.degToRad(90);
+    Mesh.rotation.x = THREE.MathUtils.degToRad(-90);
     Mesh.position.y = -2;
     this.Scene.add(Mesh);
     return Mesh;
@@ -165,7 +165,7 @@ class Parent {
   //animation
   boxRotation() {
     this.Scene.traverse((object) => {
-      if (object.name.includes("cube-")) {
+      if (object.name.includes("cube")) {
         object.rotateX(this.guiObject.rotationBox);
         object.rotateY(this.guiObject.rotationBox);
         object.rotateZ(this.guiObject.rotationBox);
@@ -175,7 +175,7 @@ class Parent {
   //rerender
   rerender = () => {
     this.WebGL.render(this.Scene, this.Camera);
-    this.Camera.lookAt(this.Scene.position);
+    this.Camera.lookAt(this.Meshes.plane.position);
     this.TrackballControls.update();
     this.helper.stats.update();
     this.boxRotation();
