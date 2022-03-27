@@ -1,13 +1,13 @@
 import * as THREE from "three";
 import "./style/style.css";
-import Stats from "stats.js";
+import Stats from "three/examples/jsm/libs/stats.module";
 import { TrackballControls } from "three/examples/jsm/controls/TrackballControls";
 import * as dat from "dat.gui";
 
 class Parent {
   constructor() {
     //properties
-    this.canvas = document.querySelector("#c");
+    this.canvas = document.querySelector("#webgl-output");
     this.Renderer = new THREE.WebGL1Renderer({ canvas: this.canvas });
     this.Scene = new THREE.Scene();
     this.Meshes = {
@@ -54,7 +54,7 @@ class Parent {
     this.Renderer.setSize(this.size.width, this.size.height);
   }
   cameraChanges() {
-    this.Camera.position.z = 0.1;
+    this.Camera.position.set(-30, 30, 30);
     this.Camera.lookAt(this.Scene.position);
     const trackBall = new TrackballControls(this.Camera, this.canvas);
     const clock = new THREE.Clock();
@@ -89,7 +89,7 @@ class Parent {
     this.Scene.add(axes);
   }
   Plane() {
-    const planeGeometry = new THREE.PlaneGeometry(70, 30);
+    const planeGeometry = new THREE.PlaneGeometry(60, 30);
     const planeMaterial = new THREE.MeshLambertMaterial({
       color: 0x808080,
       side: THREE.DoubleSide,
@@ -116,7 +116,6 @@ class Parent {
     const sphereGeometry = new THREE.SphereGeometry(4);
     const material = new THREE.MeshLambertMaterial({ color: 0x0000ff });
     const mesh = new THREE.Mesh(sphereGeometry, material);
-    mesh.position.x = 20;
     mesh.castShadow = true;
     this.Scene.add(mesh);
     return mesh;
@@ -150,7 +149,7 @@ class Parent {
     requestAnimationFrame(this.boxAnimation);
   };
   sphereAnimation = () => {
-    this.Meshes.sphere.position.x = 20 + 8 * Math.cos(this.steps);
+    this.Meshes.sphere.position.x = 15 + 8 * Math.cos(this.steps);
     this.Meshes.sphere.position.y = 10 * Math.abs(Math.sin(this.steps));
     this.steps += this.guiProperties.bounceSpeed;
     requestAnimationFrame(this.sphereAnimation);
