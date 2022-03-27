@@ -1,19 +1,13 @@
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const path = require("path");
 
 module.exports = {
-  mode: "development",
+  devtool: false,
   entry: {
     index: "./src/index.js",
   },
-  devtool: false,
-  devServer: {
-    port: "3000",
-    static: "./dist",
-  },
-  output: {
-    path: __dirname + "/dist",
-    filename: "[name].bundle.js",
-  },
+  devServer: { port: "3000", static: "./dist" },
+  mode: "development",
   module: {
     rules: [
       {
@@ -22,5 +16,13 @@ module.exports = {
       },
     ],
   },
-  plugins: [new HtmlWebpackPlugin({ template: "./src/index.html" })],
+  output: {
+    filename: "[name].bundle.js",
+    path: path.resolve(__dirname, "dist"),
+  },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: "./src/index.html",
+    }),
+  ],
 };

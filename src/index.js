@@ -1,27 +1,38 @@
 import * as THREE from "three";
 import "./style/style.css";
-import { TrackballControls } from "three/examples/jsm/controls/TrackballControls";
 import Stats from "three/examples/jsm/libs/stats.module";
+import { TrackballControls } from "three/examples/jsm/controls/TrackballControls";
 import * as dat from "dat.gui";
-import randomColor from "randomcolor";
 
 class Parent {
   constructor() {
+    //properties
     this.canvas = document.querySelector("#webgl-output");
-    this.WebGL = new THREE.WebGLRenderer({ canvas: this.canvas });
+    this.Renderer = new THREE.WebGL1Renderer({ canvas: this.canvas });
+    this.Scene = new THREE.Scene();
+    this.Meshes = {
+      plane: this.Plane(),
+      box: this.Box(),
+      sphere: this.Sphere(),
+    };
+    this.size = {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    };
     this.Camera = new THREE.PerspectiveCamera(
       70,
       window.innerWidth / window.innerHeight,
       0.01,
       2000
     );
-    this.Scene = new THREE.Scene();
-    //other properties
-    this.Meshes = {
-      plane: this.plane(),
-    };
-    this.helper = {
-      stats: this.stats(),
+    this.trackball = this.cameraChanges();
+    //stats
+    this.stats = this.statsPanel();
+    //otherProperties
+    this.steps = 0;
+    this.guiProperties = {
+      bounceSpeed: 0.04,
+      boxRotation: 0.04,
     };
     this.guiObject = {
       rotationBox: 0.04,
@@ -53,18 +64,18 @@ class Parent {
     this.rerender();
     this.onResize();
   }
-  //configurations
-  webGLConfig() {
-    this.WebGL.setSize(window.innerWidth, window.innerHeight);
-    this.WebGL.render(this.Scene, this.Camera);
-    this.WebGL.setPixelRatio(window.devicePixelRatio);
-    this.WebGL.shadowMap.enabled = true;
-    this.WebGL.setClearColor(0x000000);
+  rendererConfig() {
+    this.Renderer.shadowMap.enabled = true;
+    this.Renderer.setPixelRatio(window.devicePixelRatio);
+    this.Renderer.setClearColor(0x000000);
+    this.Renderer.setSize(this.size.width, this.size.height);
   }
-  cameraConfig() {
+  cameraChanges() {
     this.Camera.position.set(-30, 30, 30);
-    this.Camera.aspect = window.innerWidth / window.innerHeight;
-    this.Camera.updateProjectionMatrix();
+    this.Camera.lookAt(this.Scene.position);
+    const trackBall = new TrackballControls(this.Camera, this.canvas);
+    const clock = new THREE.Clock();
+    return { trackBall, clock };
   }
   sceneConfig() {
     this.Scene.fog = new THREE.Fog(0xffffff, 0.01, 100);
@@ -89,10 +100,25 @@ class Parent {
       }
     });
   }
+  // lights
+  spotLight() {
+    const spotLight = new THREE.SpotLight(0xffffff);
+    spotLight.position.set(-20, 50, 30);
+    spotLight.castShadow = true;
+    spotLight.shadow.mapSize = new THREE.Vector2(1024, 1024);
+    spotLight.shadow.camera.far = 130;
+    spotLight.shadow.camera.near = 0.1;
+    spotLight.visible = true;
+    this.Scene.add(spotLight);
+  }
   //geometries
-  plane() {
-    const Geometry = new THREE.PlaneGeometry(50, 20);
-    const Material = new THREE.MeshLambertMaterial({
+  axesHelper() {
+    const axes = new THREE.AxesHelper(12);
+    this.Scene.add(axes);
+  }
+  Plane() {
+    const planeGeometry = new THREE.PlaneGeometry(60, 30);
+    const planeMaterial = new THREE.MeshLambertMaterial({
       color: 0x808080,
       side: THREE.DoubleSide,
     });
@@ -118,13 +144,22 @@ class Parent {
     light.shadow.camera.near = 0.1;
     this.Scene.add(light);
   }
-  //helper
-  stats() {
+  statsPanel() {
     const stats = new Stats();
+    stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
     document.body.appendChild(stats.dom);
     return stats;
   }
-  dat() {
+  //rerenderer
+  Rerender = () => {
+    this.stats.begin();
+    this.stats.end();
+    this.Renderer.render(this.Scene, this.Camera);
+    requestAnimationFrame(this.Rerender);
+    this.trackball.trackBall.update(this.trackball.clock.getDelta());
+  };
+  // gui
+  gui = () => {
     const gui = new dat.GUI();
     gui.add(this.guiObject, "rotationBox", 0, 0.5);
     gui.add(this.guiObject, "addBox");
@@ -182,4 +217,5 @@ class Parent {
     requestAnimationFrame(this.rerender);
   };
 }
+
 new Parent();
