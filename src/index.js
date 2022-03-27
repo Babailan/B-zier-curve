@@ -21,9 +21,9 @@ class Parent {
     };
     this.Camera = new THREE.PerspectiveCamera(
       70,
-      this.size.width / this.size.height,
-      0.1,
-      1000
+      window.innerWidth / window.innerHeight,
+      0.01,
+      2000
     );
     this.trackball = this.cameraChanges();
     //stats
@@ -34,18 +34,35 @@ class Parent {
       bounceSpeed: 0.04,
       boxRotation: 0.04,
     };
+    this.guiObject = {
+      rotationBox: 0.04,
+      addBox: () => {
+        this.addBox();
+      },
+      removeCube: () => {
+        this.removeCube();
+      },
+      removeAllCube: () => {
+        this.removeAllCube();
+      },
+    };
+
+    this.Indentifier = {};
+    this.current = 0;
+    this.TrackballControls = new TrackballControls(this.Camera, this.canvas);
+    this.animations = [];
+    this.track;
     this.init();
   }
   init() {
+    this.sceneConfig();
+    this.ambientLight();
+    this.webGLConfig();
     this.spotLight();
-    this.rendererConfig();
-    this.axesHelper();
-    //Event Listener
+    this.dat();
+    this.cameraConfig();
+    this.rerender();
     this.onResize();
-    this.boxAnimation();
-    this.sphereAnimation();
-    this.gui();
-    this.Rerender();
   }
   rendererConfig() {
     this.Renderer.shadowMap.enabled = true;
@@ -60,16 +77,27 @@ class Parent {
     const clock = new THREE.Clock();
     return { trackBall, clock };
   }
+  sceneConfig() {
+    this.Scene.fog = new THREE.Fog(0xffffff, 0.01, 100);
+  }
+  //Event like window eventLister
   onResize() {
     window.addEventListener("resize", () => {
-      this.size.width = window.innerWidth;
-      this.size.height = window.innerHeight;
       this.Camera.aspect = window.innerWidth / window.innerHeight;
       this.Camera.updateProjectionMatrix();
-
-      //render Again
-      this.Renderer.setSize(this.size.width, this.size.height);
-      this.Renderer.setPixelRatio(window.devicePixelRatio);
+      this.WebGL.setSize(window.innerWidth, window.innerHeight);
+      this.WebGL.setPixelRatio(window.devicePixelRatio);
+      if (window.innerWidth < 768) {
+        this.Camera.position.z = 0;
+        this.Camera.rotateX(0);
+        this.Camera.rotateZ(0);
+        this.Camera.rotateY(0);
+      } else {
+        this.Camera.position.z = 30;
+        this.Camera.rotateX(0);
+        this.Camera.rotateZ(0);
+        this.Camera.rotateY(0);
+      }
     });
   }
   // lights
@@ -94,31 +122,27 @@ class Parent {
       color: 0x808080,
       side: THREE.DoubleSide,
     });
-    const mesh = new THREE.Mesh(planeGeometry, planeMaterial);
-    mesh.position.y = -3.5;
-    mesh.rotateX(Math.PI * -0.5);
-    mesh.receiveShadow = true;
-    this.Scene.add(mesh);
-    return mesh;
+    const Mesh = new THREE.Mesh(Geometry, Material);
+    Mesh.receiveShadow = true;
+    Mesh.rotation.x = THREE.MathUtils.degToRad(-90);
+    Mesh.position.y = -2;
+    this.Scene.add(Mesh);
+    return Mesh;
   }
-  Box() {
-    const boxGeometry = new THREE.BoxGeometry(4, 4, 4);
-    const materialBox = new THREE.MeshLambertMaterial({
-      color: 0xff0000,
-    });
-    const mesh = new THREE.Mesh(boxGeometry, materialBox);
-    mesh.position.x = -10;
-    mesh.castShadow = true;
-    this.Scene.add(mesh);
-    return mesh;
+  //light
+  ambientLight() {
+    const light = new THREE.AmbientLight(0x3c3c3c);
+    light.position.y = 10;
+    this.Scene.add(light);
   }
-  Sphere() {
-    const sphereGeometry = new THREE.SphereGeometry(4);
-    const material = new THREE.MeshLambertMaterial({ color: 0x0000ff });
-    const mesh = new THREE.Mesh(sphereGeometry, material);
-    mesh.castShadow = true;
-    this.Scene.add(mesh);
-    return mesh;
+  spotLight() {
+    const light = new THREE.SpotLight(0xffffff, 1.8, 150, 120);
+    light.position.set(0, 60, 0);
+    light.castShadow = true;
+    light.visible = true;
+    light.shadow.camera.far = 130;
+    light.shadow.camera.near = 0.1;
+    this.Scene.add(light);
   }
   statsPanel() {
     const stats = new Stats();
@@ -137,22 +161,60 @@ class Parent {
   // gui
   gui = () => {
     const gui = new dat.GUI();
-    gui.domElement.style.marginRight = "50px";
-    gui.add(this.guiProperties, "bounceSpeed", 0, 0.5);
-    gui.add(this.guiProperties, "boxRotation", 0, 0.5);
-  };
-  //animaiton
-  boxAnimation = () => {
-    this.Meshes.box.rotation.x += this.guiProperties.boxRotation;
-    this.Meshes.box.rotation.y += this.guiProperties.boxRotation;
-    this.Meshes.box.rotation.z += this.guiProperties.boxRotation;
-    requestAnimationFrame(this.boxAnimation);
-  };
-  sphereAnimation = () => {
-    this.Meshes.sphere.position.x = 15 + 8 * Math.cos(this.steps);
-    this.Meshes.sphere.position.y = 10 * Math.abs(Math.sin(this.steps));
-    this.steps += this.guiProperties.bounceSpeed;
-    requestAnimationFrame(this.sphereAnimation);
+    gui.add(this.guiObject, "rotationBox", 0, 0.5);
+    gui.add(this.guiObject, "addBox");
+    gui.add(this.guiObject, "removeCube");
+    gui.add(this.guiObject, "removeAllCube");
+  }
+  //add somthing
+  removeAllCube() {
+    let length = this.Scene.children.length - 1;
+    for (let i = length; i >= 0; i--) {
+      if (this.Scene.children[i].name.includes("cube-")) {
+        this.Scene.children.splice(i, 1);
+      }
+    }
+  }
+  addBox() {
+    function sizeRandom(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+    const size = sizeRandom(1, 3);
+    const colur = randomColor();
+    const generatedColor = parseInt(colur.replace("#", "0x"));
+    const Geometry = new THREE.BoxGeometry(size, size, size);
+    const Material = new THREE.MeshLambertMaterial({ color: generatedColor });
+    const Mesh = new THREE.Mesh(Geometry, Material);
+    Mesh.castShadow = true;
+    Mesh.position.z = sizeRandom(-9, 9);
+    Mesh.position.x = sizeRandom(-22, 22);
+    Mesh.name = "cube-" + this.Scene.children.length;
+    this.Scene.add(Mesh);
+  }
+  removeCube() {
+    const length = this.Scene.children.length - 1;
+    if (this.Scene.children[length].name.includes("cube-")) {
+      this.Scene.children.pop();
+    }
+  }
+  //animation
+  boxRotation() {
+    this.Scene.traverse((object) => {
+      if (object.name.includes("cube")) {
+        object.rotateX(this.guiObject.rotationBox);
+        object.rotateY(this.guiObject.rotationBox);
+        object.rotateZ(this.guiObject.rotationBox);
+      }
+    });
+  }
+  //rerender
+  rerender = () => {
+    this.WebGL.render(this.Scene, this.Camera);
+    this.Camera.lookAt(this.Meshes.plane.position);
+    this.TrackballControls.update();
+    this.helper.stats.update();
+    this.boxRotation();
+    requestAnimationFrame(this.rerender);
   };
 }
 
