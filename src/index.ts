@@ -93,9 +93,3 @@ if (window.innerWidth < window.innerHeight) {
         document.body.innerHTML += ("<h1>WebGL is not avaiable in this Browser</h1>")
     }
 }
-
-// if not the same width & height of the previous canvas and present.
-// function resizeRender(renderer: WebGLRenderer) {
-
-// }
-
