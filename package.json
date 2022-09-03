@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@types/three": "^0.143.1",
+    "nodemon": "^2.0.19",
     "three": "^0.143.0"
   }
 }
