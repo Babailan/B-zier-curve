@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import "./style/style.css";
-import { btw_01, quadraticBezierCurve, drawLine } from './lerp';
-import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls'
+import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls';
+import "./lerp"
+
 function main() {
     const canvas = document.querySelector("#c") as HTMLCanvasElement;
     function makeCamera() {
@@ -38,20 +39,10 @@ function main() {
     camera.position.set(0, 0, 10);
     camera.lookAt(0, 0, 0)
     let t = 0;
-    {
-        const drawPoints = drawLine(lineVector);
-        const geometry = new THREE.BufferGeometry().setFromPoints(drawPoints);
-        const line = new THREE.Line(geometry);
-        scene.add(line)
-    }
 
     function render() {
         requestAnimationFrame(render);
-        let inter = btw_01(t);
         t += 0.01;
-        let vec3 = quadraticBezierCurve(lineVector, inter);
-        const { x, y, z } = vec3;
-        mesh.position.set(x, y, z)
         renderer.render(scene, camera)
         controls.update();
         camera.updateProjectionMatrix()

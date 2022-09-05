@@ -5,6 +5,7 @@
       "module": "CommonJS",
       "target": "ES6",
       "allowJs": true,
-      "moduleResolution": "node"
+      "moduleResolution": "node",
+      "removeComments": true
     },
   }
