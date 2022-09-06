@@ -1,16 +1,18 @@
 import * as THREE from 'three';
 import "./style/style.css";
-import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls';
-import "./lerp"
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { line, s } from './drawLine';
+import { de_casteljau } from './lerp';
+import t from "./t"
 
 function main() {
     const canvas = document.querySelector("#c") as HTMLCanvasElement;
     function makeCamera() {
-        const left = window.innerWidth / -100;
-        const right = window.innerWidth / 100;
-        const top = window.innerHeight / 100;
-        const bottom = window.innerHeight / -100;
-        const camera = new THREE.OrthographicCamera(left, right, top, bottom, 0.1, 1000);
+        const fov = 70
+        const aspectRatio = window.innerWidth / window.innerHeight
+        const near = 0.1;
+        const far = 1000
+        const camera = new THREE.PerspectiveCamera(fov, aspectRatio, near, far);
         return camera;
     };
 
@@ -21,34 +23,39 @@ function main() {
     const boxGeo = new THREE.SphereGeometry(0.2);
     const material = new THREE.MeshBasicMaterial({ color: 0x0000ff, wireframe: false });
     const mesh = new THREE.Mesh(boxGeo, material);
-    const controls = new TrackballControls(camera, canvas);
+    const controls = new OrbitControls(camera, canvas);
 
-
-    // three length because it's quadratic.
-    const lineVector: THREE.Vector3[] = [];
+    let yawa: s[] = [[-4, 0, 0], [4, 4, 0], [4, 0, 0], [2, 1, 0], [1, 4, 0]]
     {
-        lineVector.push(new THREE.Vector3(window.innerWidth / -200, 0, 0))
-        lineVector.push(new THREE.Vector3(0, window.innerHeight / 200, 0))
-        lineVector.push(new THREE.Vector3(window.innerWidth / 200, 0, 0))
-        const geometry = new THREE.BufferGeometry().setFromPoints(lineVector);
-        const line = new THREE.Line(geometry)
-        scene.add(line)
+        const Line = line(yawa, scene);
+        // x = Line[1];
+        const mesh = new THREE.Line(Line[0], new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        scene.add(mesh);
     }
 
     scene.add(mesh);
     camera.position.set(0, 0, 10);
-    camera.lookAt(0, 0, 0)
-    let t = 0;
-
+    camera.lookAt(0, 0, 0);
+    let initialLerpValue = 0;
+    {
+        const [x, y, z] = de_casteljau(initialLerpValue, yawa);
+        mesh.position.set(x, y, z)
+    }
     function render() {
         requestAnimationFrame(render);
-        t += 0.01;
         renderer.render(scene, camera)
         controls.update();
+        initialLerpValue += 0.006;
+
+
+        const [x, y, z] = de_casteljau(t(initialLerpValue), yawa);
+        mesh.position.set(x, y, z)
+
         camera.updateProjectionMatrix()
-
-
     }
     render();
+    window.addEventListener("resize", () => {
+        renderer.setSize(window.innerWidth, window.innerHeight)
+    })
 }
 main()
