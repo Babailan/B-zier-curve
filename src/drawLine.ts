@@ -1,29 +1,34 @@
-import { Vector3, BufferGeometry, Scene, Sphere, Mesh, SphereGeometry, MeshBasicMaterial } from "three";
-type s = [number, number, number]
+import { Vector3, BufferGeometry, Scene, SphereGeometry, MeshBasicMaterial, Mesh } from "three";
+import { de_casteljau } from "./lerp";
+type s = number[][];
 
-function line(s: Array<s>, derivitive?: boolean, scene?: Scene): [BufferGeometry, Vector3[]] {
+function line(s: s): BufferGeometry {
     let vector = [];
     for (let i = 0; i < s.length; i++) {
         vector.push(new Vector3(s[i][0], s[i][1], s[i][2]));
     }
     const geometry = new BufferGeometry().setFromPoints(vector);
-
-    if (!!scene) {
-        for (let i = 0; i < vector.length; i++) {
-            const m = new SphereGeometry(0.05, 1, 1);
-            const mesh = new Mesh(m, new MeshBasicMaterial({ color: 0xff0000 }));
-            mesh.position.set(s[i][0], s[i][1], s[i][2])
-            scene.add(mesh);
-        }
+    return geometry;
+}
+function drawBezierCurve(s: s): number[][] {
+    let t = 0;
+    const setFromPoints = [];
+    setFromPoints.push(de_casteljau(t, s));
+    while (t < 1) {
+        t += 0.01;
+        setFromPoints.push(de_casteljau(t, s))
     }
-    if (derivitive) {
-        let t = 0;
-        while (t < 1) {
-            t += 0.01;
-            console.log(t)
-        }
+    return setFromPoints;
+}
+function drawPairs(s: s, scene: Scene) {
+    for (let i = 0; i < s.length; i++) {
+        const geometry = new SphereGeometry(0.1);
+        const material = new MeshBasicMaterial({ color: 0xff0000 })
+        const mesh = new Mesh(geometry, material)
+        mesh.position.set(s[i][0], s[i][1], s[i][2])
+        scene.add(mesh)
     }
-    return [geometry, vector];
 }
 
-export { s, line }
+
+export { drawBezierCurve, line, drawPairs }
