@@ -27,7 +27,7 @@ function main() {
 
     let yawa: s[] = [[-4, 0, 0], [4, 4, 0], [4, 0, 0], [2, 1, 0], [1, 4, 0]]
     {
-        const Line = line(yawa, scene);
+        const Line = line(yawa, true, scene);
         // x = Line[1];
         const mesh = new THREE.Line(Line[0], new THREE.MeshBasicMaterial({ color: 0xffffff }));
         scene.add(mesh);
